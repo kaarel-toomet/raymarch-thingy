@@ -1,5 +1,17 @@
 # raymarch-thingy
 
-A bad renderer using the technique of ray-marching
+A bad renderer using ray-marching technique
 
-Compile using:`g++ raymarch.cpp -o FILENAME -lsfml-graphics -lsfml-window -lsfml-system`  (may not work)
+
+## System requirements:
+
+* C++ compiler
+* SFML library (install _libsfml-dev_ on ubuntu).
+
+
+## Compiling
+
+Compile by `make`, or if you prefer to compile directly:
+
+    g++ raymarch.cpp -o FILENAME -lsfml-graphics -lsfml-window -lsfml-system
+
