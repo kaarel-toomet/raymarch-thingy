@@ -1,4 +1,8 @@
 CPP = g++
+## optimization options: O0 - no optimization, O3 - max optimization
+## O0 is fastest to compile and easiest to debug
+## O3 gives fastest code
+OPTIMIZE = -O3  
 FINAL = raymarch  # final file name
 SFML_LIBS = -lsfml-graphics -lsfml-window -lsfml-system
 # sfml libraries to link
@@ -13,7 +17,7 @@ all: $(FINAL)
 	echo "all done :-)"
 
 %.o: %.cpp color.hpp
-	$(CPP) -c -Wall $<
+	$(CPP) -c $(OPTIMIZE) -Wall $<
 # $< matches the first prerequisite
 
 $(FINAL): $(OBJECTS)
