@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
+#include "color.hpp"
+
 const unsigned long int W = 1318;
 const unsigned long int H = 716;
 
@@ -35,16 +37,20 @@ float distance(float x, float y, float z) {
     return pow(tx*tx + ty*ty + tz*tz, 0.5)-1.0;
 }
 
-char march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
+Color march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
+    /* Return pixel color for pos */
     float dist = distance(pos.x, pos.y, pos.z);
-    char color = 224;
-    //std::cout << pos.z << "\n";
-    if(dist < 0.01) {color = (char)(2048 / (iter+8));}
-    
-    else if(iter > 100) {color = 0;}
-
-    else {color = march(pos+(dir*dist),dir,iter+1);}
-
+    Color color;
+    // Create default color RGB triple
+    if(dist < 0.01) {
+	color = Color(2048 / (iter+8), 255, 0);
+    }
+    else if(iter > 100) {
+	color = Color(0, 0, 0);
+    }
+    else {
+	color = march(pos+(dir*dist),dir,iter+1);
+    }
     return color;
 }
 
@@ -55,6 +61,7 @@ double clamp(double n,double min,double max) {
 }
 
 void render(void) {
+    Color color;
     for(long int x = 0; x < W; x++) {
         for(long int y = 0; y < H; y++) {
             double tx = ((double)x-W/2)/3;
@@ -62,11 +69,11 @@ void render(void) {
             sf::Vector3f dir(tx*0.001,ty*0.001,1);
             sf::Vector3f normdir;
             normdir = dir / (float)sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
-            char color = march(sf::Vector3f(0,0,-50), normdir, 0);
+            color = march(sf::Vector3f(0,0,-50), normdir, 0);
             //std::cout << (int)color << "\n";
-            pixels[x*4l+y*W*4l] = color;
-            pixels[x*4l+y*W*4l+1l] = color;
-            pixels[x*4l+y*W*4l+2l] = color;
+            pixels[x*4l+y*W*4l] = color.R;
+            pixels[x*4l+y*W*4l+1l] = color.B;
+            pixels[x*4l+y*W*4l+2l] = color.G;
         }
     }
     texture.update(pixels);

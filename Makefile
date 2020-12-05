@@ -12,7 +12,7 @@ OBJECTS = $(patsubst %.cpp, %.o, $(SOURCES))
 all: $(FINAL)
 	echo "all done :-)"
 
-%.o: %.cpp
+%.o: %.cpp color.hpp
 	$(CPP) -c -Wall $<
 # $< matches the first prerequisite
 
