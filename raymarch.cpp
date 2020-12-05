@@ -41,9 +41,9 @@ Color march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
     /* Return pixel color for pos */
     float dist = distance(pos.x, pos.y, pos.z);
     Color color;
-    // Create default color RGB triple
     if(dist < 0.01) {
-	color = Color(2048 / (iter+8), 255, 0);
+	color = Color(2048 / (iter+8), 100, 100);
+	// R, G, B values for this pixel
     }
     else if(iter > 100) {
 	color = Color(0, 0, 0);
@@ -70,10 +70,10 @@ void render(void) {
             sf::Vector3f normdir;
             normdir = dir / (float)sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
             color = march(sf::Vector3f(0,0,-50), normdir, 0);
-            //std::cout << (int)color << "\n";
+            // std::cout << color << "\n";
             pixels[x*4l+y*W*4l] = color.R;
-            pixels[x*4l+y*W*4l+1l] = color.B;
-            pixels[x*4l+y*W*4l+2l] = color.G;
+            pixels[x*4l+y*W*4l+1l] = color.G;
+            pixels[x*4l+y*W*4l+2l] = color.B;
         }
     }
     texture.update(pixels);
@@ -81,7 +81,6 @@ void render(void) {
 
 int main()
 {
-
     //if (!font.loadFromFile("NimbusSans-Regular.otf")){std::cout << "Unable to load font from file\n";}
 
     //text.setFont(font);
