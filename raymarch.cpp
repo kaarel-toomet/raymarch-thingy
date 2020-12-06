@@ -2,8 +2,11 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
-const unsigned long int W = 1318;
-const unsigned long int H = 716;
+#include "color.hpp"
+
+/* window size.  Seems 'uint' is fine type here */
+const uint W = 1318;
+const uint H = 716;
 
 //bool world[W][H];
 //bool buffer[W][H];
@@ -35,16 +38,20 @@ float distance(float x, float y, float z) {
     return pow(tx*tx + ty*ty + tz*tz, 0.5)-1.0;
 }
 
-char march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
+Color march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
+    /* Return pixel color for pos */
     float dist = distance(pos.x, pos.y, pos.z);
-    char color = 224;
-    //std::cout << pos.z << "\n";
-    if(dist < 0.01) {color = (char)(2048 / (iter+8));}
-    
-    else if(iter > 100) {color = 0;}
-
-    else {color = march(pos+(dir*dist),dir,iter+1);}
-
+    Color color;
+    if(dist < 0.01) {
+	color = Color(2048 / (iter+8), 100, 100);
+	// R, G, B values for this pixel
+    }
+    else if(iter > 100) {
+	color = Color(0, 0, 0);
+    }
+    else {
+	color = march(pos+(dir*dist),dir,iter+1);
+    }
     return color;
 }
 
@@ -55,18 +62,19 @@ double clamp(double n,double min,double max) {
 }
 
 void render(void) {
-    for(long int x = 0; x < W; x++) {
-        for(long int y = 0; y < H; y++) {
+    Color color;
+    for(uint x = 0; x < W; x++) {
+        for(uint y = 0; y < H; y++) {
             double tx = ((double)x-W/2)/3;
             double ty = ((double)y-H/2)/3;
             sf::Vector3f dir(tx*0.001,ty*0.001,1);
             sf::Vector3f normdir;
             normdir = dir / (float)sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
-            char color = march(sf::Vector3f(0,0,-50), normdir, 0);
-            //std::cout << (int)color << "\n";
-            pixels[x*4l+y*W*4l] = color;
-            pixels[x*4l+y*W*4l+1l] = color;
-            pixels[x*4l+y*W*4l+2l] = color;
+            color = march(sf::Vector3f(0,0,-50), normdir, 0);
+            // std::cout << color << "\n";
+            pixels[x*4l+y*W*4l] = color.R;
+            pixels[x*4l+y*W*4l+1l] = color.G;
+            pixels[x*4l+y*W*4l+2l] = color.B;
         }
     }
     texture.update(pixels);
@@ -74,7 +82,6 @@ void render(void) {
 
 int main()
 {
-
     //if (!font.loadFromFile("NimbusSans-Regular.otf")){std::cout << "Unable to load font from file\n";}
 
     //text.setFont(font);
@@ -85,8 +92,8 @@ int main()
 
     sprite.setTexture(texture);
 
-    for(int x = 0; x < W; x++) {
-        for(int y = 0; y < H; y++) {
+    for(uint x = 0; x < W; x++) {
+        for(uint y = 0; y < H; y++) {
             pixels[3+x*4+y*4*W] = 255;
         }
     }
