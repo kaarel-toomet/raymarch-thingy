@@ -5,8 +5,8 @@
 #include "color.hpp"
 
 /* window size.  Seems 'uint' is fine type here */
-const uint W = 1318;
-const uint H = 716;
+const uint W = 1300;
+const uint H = 700;
 
 //bool world[W][H];
 //bool buffer[W][H];
@@ -30,17 +30,32 @@ sf::Sprite sprite;
 //sf::Text text;
 float fold(float a, float x) {return fabs(a-x)+x;}
 
-float distance(float x, float y, float z) {
-    float tx = x+y;
-    float ty = y;
-    float tz = z;
-    //std::cout << sqrt(tx*tx + ty*ty + tz*tz)-1.0 << "\n";
-    return pow(tx*tx + ty*ty + tz*tz, 0.5)-1.0;
+float norm(sf::Vector3f v) {
+    /* compute the Euclidean norm of vector */
+    return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+}
+
+float sphere(sf::Vector3f pos) {
+    /* sphere: signed distance function: the function
+       that determines the shape of the rendered object
+    */
+    return norm(pos) - 1.0;
+}
+
+float sphereArray(sf::Vector3f pos) {
+    /* Array of spheres, spaced by 4 units along all axes
+     */
+    float spacing = 4;  // half of the spacing
+    float spacing2 = spacing/2;
+    sf::Vector3f foldedPos = sf::Vector3f(fmod(pos.x - spacing2, spacing) + spacing2,
+					  fmod(pos.y - spacing2, spacing) + spacing2,
+					  fmod(pos.z - spacing2, spacing) + spacing2);
+    return norm(foldedPos) - 1.0;
 }
 
 Color march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
     /* Return pixel color for pos */
-    float dist = distance(pos.x, pos.y, pos.z);
+    float dist = sphereArray(pos);
     Color color;
     if(dist < 0.01) {
 	color = Color(2048 / (iter+8), 100, 100);
@@ -65,8 +80,8 @@ void render(void) {
     Color color;
     for(uint x = 0; x < W; x++) {
         for(uint y = 0; y < H; y++) {
-            double tx = ((double)x-W/2)/3;
-            double ty = ((double)y-H/2)/3;
+            double tx = ((double)x-W/2)/0.1;
+            double ty = ((double)y-H/2)/0.1;
             sf::Vector3f dir(tx*0.001,ty*0.001,1);
             sf::Vector3f normdir;
             normdir = dir / (float)sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
