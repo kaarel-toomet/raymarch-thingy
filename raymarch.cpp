@@ -5,8 +5,12 @@
 #include "color.hpp"
 
 /* window size.  Seems 'uint' is fine type here */
-const uint W = 1318;
-const uint H = 716;
+const uint W = 1300;
+const uint H = 700;
+const float zoom = 80;
+const sf::Vector3f camera = sf::Vector3f((float)W/2.0 + 2.0, (float)H/2.0 + 2.0, -30);
+// put camera at negative z, it will look toward the origin.
+const int maxIter = 1300;  // maximum number of marching iterations
 
 //bool world[W][H];
 //bool buffer[W][H];
@@ -28,29 +32,67 @@ sf::Sprite sprite;
 //sf::Clock fpsmeter;
 //sf::Font font;
 //sf::Text text;
+
+/* print Vector3f to output stream
+   mainly for debugging */
+std::ostream& operator<<(std::ostream &out, sf::Vector3f const& v) {
+    out << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+    return out;
+}
+
 float fold(float a, float x) {return fabs(a-x)+x;}
 
-float distance(float x, float y, float z) {
-    float tx = x+y;
-    float ty = y;
-    float tz = z;
-    //std::cout << sqrt(tx*tx + ty*ty + tz*tz)-1.0 << "\n";
-    return pow(tx*tx + ty*ty + tz*tz, 0.5)-1.0;
+float norm(sf::Vector3f v) {
+    /* compute the Euclidean norm of vector */
+    return sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+}
+
+float sphere(sf::Vector3f pos) {
+    /* sphere: signed distance function: the function
+       that determines the shape of the rendered object
+    */
+    return norm(pos) - 1.0;
+}
+
+float sphereArray(sf::Vector3f pos) {
+    /* Array of spheres, spaced by 4 units along all axes
+       Negative z values are empty to make camera placement easier
+     */
+    float spacing = 4;  // half of the spacing
+    float xf = fabs(fmod(pos.x, spacing));
+    float yf = fabs(fmod(pos.y, spacing));
+    float zf = pos.z;
+    /* negative z is empty */
+    if(zf > 0) {
+	zf = fabs(fmod(zf, spacing));
+    }
+    sf::Vector3f foldedPos = sf::Vector3f(fmin(xf, spacing - xf),
+					  fmin(yf, spacing - yf),
+					  fmin(zf, spacing - zf));
+    // std::cout << "foldedpos: " << foldedPos << "  ";
+    return norm(foldedPos) - 1.0;
 }
 
 Color march(sf::Vector3f pos, sf::Vector3f dir, int iter) {
-    /* Return pixel color for pos */
-    float dist = distance(pos.x, pos.y, pos.z);
+    /* Return pixel color for pos 
+       Take a position and direction.  If position is not on surface, take 
+       largest safe step toward direction and repeat.
+     */
     Color color;
+    /* Distance to the closest pixel */
+    float dist = sphereArray(pos);
     if(dist < 0.01) {
-	color = Color(2048 / (iter+8), 100, 100);
+	float it = (float)iter;
+	/* use exponential decay to be able to display colors for
+	   a larger range of iterations */
+	color = Color(exp(-it/20.0f), exp(-it/60.0f), exp(-it/120.0f));
 	// R, G, B values for this pixel
     }
-    else if(iter > 100) {
+    else if(iter > maxIter) {
 	color = Color(0, 0, 0);
     }
     else {
-	color = march(pos+(dir*dist),dir,iter+1);
+	color = march(pos + (dir*dist), dir, iter+1);
     }
     return color;
 }
@@ -61,16 +103,18 @@ double clamp(double n,double min,double max) {
     return n;
 }
 
-void render(void) {
+void render(sf::Vector3f camera) {
     Color color;
+    /* loop over pixels in the window */
     for(uint x = 0; x < W; x++) {
         for(uint y = 0; y < H; y++) {
-            double tx = ((double)x-W/2)/3;
-            double ty = ((double)y-H/2)/3;
-            sf::Vector3f dir(tx*0.001,ty*0.001,1);
-            sf::Vector3f normdir;
-            normdir = dir / (float)sqrt(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
-            color = march(sf::Vector3f(0,0,-50), normdir, 0);
+	    /* ray vector */
+            sf::Vector3f ray((x - camera.x)/zoom, (y - camera.y)/zoom, 0 - camera.z);
+	    ray = ray/norm(ray);
+	    // std::cout << "camera: " << camera << "   ray: " << ray << "\n";
+	    // norm the ray in order to use it with distance later
+	    /* take a ray from camera toward the scene and start from there */
+            color = march(camera + ray, ray, 0);
             // std::cout << color << "\n";
             pixels[x*4l+y*W*4l] = color.R;
             pixels[x*4l+y*W*4l+1l] = color.G;
@@ -97,8 +141,7 @@ int main()
             pixels[3+x*4+y*4*W] = 255;
         }
     }
-    //generate();
-    render();
+    render(camera);
     sf::RenderWindow window(sf::VideoMode(W, H), "jura");
     //sf::CircleShape shape(100.f);
     //shape.setFillColor(sf::Color::Green);
@@ -172,7 +215,6 @@ int main()
         window.draw(sprite);
         //window.draw(text);
         window.display();
-        //std::cout << std::(-7.0,6.0) << "\n";
         //std::cout << 1.0f/fpsmeter.restart().asSeconds() << "\n";
     }
 
