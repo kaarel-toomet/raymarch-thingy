@@ -1,6 +1,7 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <cmath>
+#include <omp.h>
 
 #include "color.hpp"
 
@@ -8,7 +9,7 @@
 const uint W = 1300;
 const uint H = 700;
 const float zoom = 80;
-const sf::Vector3f camera = sf::Vector3f((float)W/2.0 + 2.0, (float)H/2.0 + 2.0, -30);
+const sf::Vector3f camera = sf::Vector3f((float)W/2.0 + 1.0, (float)H/2.0 + 1.5, -25);
 // put camera at negative z, it will look toward the origin.
 const int maxIter = 1300;  // maximum number of marching iterations
 
@@ -104,17 +105,17 @@ double clamp(double n,double min,double max) {
 }
 
 void render(sf::Vector3f camera) {
-    Color color;
-    /* loop over pixels in the window */
+    /* loop over pixels in the window using parallel loop */
+#pragma omp parallel for
     for(uint x = 0; x < W; x++) {
         for(uint y = 0; y < H; y++) {
 	    /* ray vector */
             sf::Vector3f ray((x - camera.x)/zoom, (y - camera.y)/zoom, 0 - camera.z);
 	    ray = ray/norm(ray);
-	    // std::cout << "camera: " << camera << "   ray: " << ray << "\n";
 	    // norm the ray in order to use it with distance later
+	    // std::cout << "camera: " << camera << "   ray: " << ray << "\n";
 	    /* take a ray from camera toward the scene and start from there */
-            color = march(camera + ray, ray, 0);
+            Color color = march(camera + ray, ray, 0);
             // std::cout << color << "\n";
             pixels[x*4l+y*W*4l] = color.R;
             pixels[x*4l+y*W*4l+1l] = color.G;
@@ -126,8 +127,6 @@ void render(sf::Vector3f camera) {
 
 int main()
 {
-    //if (!font.loadFromFile("NimbusSans-Regular.otf")){std::cout << "Unable to load font from file\n";}
-
     //text.setFont(font);
     //text.setCharacterSize(24);
     //text.setFillColor(sf::Color(255,0,0));
@@ -135,11 +134,10 @@ int main()
     if (!texture.create((uint)W,(uint)H)) {std::cout << "Unable to create texture\n";}
 
     sprite.setTexture(texture);
-
     for(uint x = 0; x < W; x++) {
-        for(uint y = 0; y < H; y++) {
-            pixels[3+x*4+y*4*W] = 255;
-        }
+	for(uint y = 0; y < H; y++) {
+	    pixels[3+x*4+y*4*W] = 255;
+	}
     }
     render(camera);
     sf::RenderWindow window(sf::VideoMode(W, H), "jura");
@@ -147,7 +145,6 @@ int main()
     //shape.setFillColor(sf::Color::Green);
 
     window.setFramerateLimit(30);
-
     while (window.isOpen())
     {
         sf::Event event;
